@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html layout:decorate="~{fragments/doctorLayout}">
+
+<head>
+	<title>Doctor Profile</title>
+</head>
+
+<body>
+	<div layout:fragment="content">
+		<div id="isiData"></div>
+		<div id="tambahSpesialis" class="d-flex flex-row justify-content-end me-3"></div>
+
+
+		<script>
+
+			$(function () {
+				getData()
+			})
+
+			function getData() {
+				var split = window.location.pathname.split('/')
+				var id = split[split.length - 1]
+
+				$.ajax({
+					url: `/api/user/${id}`,
+					type: 'get',
+					contentType: 'application/json',
+					success: function (res) {
+						var str = `
+									<button type="button" class="btn btn-transparent p-0" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="openModal(${id}, ${res.id})">
+										 <img src="/icons/pencil-edit.svg" alt="user-edit" height="10" width="10" id="editData">
+							 			</button>` // edit image button
+						$.ajax({
+							url: `/api/profile/doctor/${id}`,
+							type: 'GET',
+							contentType: 'application/json',
+							success: function (data) {
+								var doctorId = data.id
+								var bioId = data.biodataId.id
+								var bio = data.biodataId
+								var imagePath = "/img/default.jpg"
+								if (bio.pathImage != null) {
+									imagePath = bio.pathImage
+								}
+
+								var str = `
+						<img src="${imagePath}" alt="user-avatar" class="d-block rounded-circle border border-2 border-primary" style="padding: 3px;" height="130" width="130" id="uploadedPhoto">
+										<div id="doctorDetails" class="d-flex align-items-center flex-column p-1 lh-1">
+											<p id="doctorName" class="fw-bold m-0 pt-1" style="font-size: 20px;">${bio.fullName}</p>
+											<span id="doctorSpecialization"></span>
+											<div id="stars" class="text-warning">
+												<i class='bx bxs-star' ></i>
+												<i class='bx bxs-star' ></i>
+												<i class='bx bxs-star' ></i>
+												<i class='bx bxs-star' ></i>
+												<i class='bx bxs-star-half' ></i>
+												
+											</div>
+										</div>
+						` // showing the image, name and star doctor
+								$("#doctorDatas").html(str)
+
+								console.log(doctorId)
+
+								$.ajax({
+									url: `/api/doctor/currentSpecialization/${doctorId}`,
+									type: 'get',
+									contentType: 'application/json',
+									success: function (data) {
+										console.log(data)
+										var specName = ""
+										var btnStr = `<button type="button" class="btn btn-icon btn-primary" onclick="addSpecialization(${bioId}, ${doctorId})">`
+													
+										if (data != '') {
+											specName = data.specialization.specialization
+											btnStr += `<i class='bx bxs-pencil' ></i>`
+										}else{
+											btnStr += `<i class='bx bx-plus'></i>`
+										}
+										
+										btnStr+=`</button>`
+										var spec = `<p id="doctorSpec" class="m-0 pb-1" style="font-size: 13px;">${specName}</p>`
+										var dataSpec = `<p class="m-2" style="font-size: 20px;">${specName}</p>`
+
+										console.log(data)
+
+										$("#tambahSpesialis").html(btnStr) // button tambah spesialis
+										
+										$("#isiData").html(dataSpec) // spesialis di dalam konten
+										$("#doctorSpecialization").html(spec) // spesialis di bawah image
+									}
+								})
+								
+								//list pendidikan
+								$.ajax({
+									url: `/api/doctor/education/${doctorId}`,
+									type: 'get',
+									contentType: 'application/json',
+									success: function (data) {
+										var str = ``
+
+										for (var i = 0; i < data.length; i++) {
+
+											str += `<div id="univ-details">
+										<p id="univ" class="m-0 lh-sm">${data[i].institutionName}</p>
+										<div id="" class="ps-2 d-flex justify-content-between" style="font-size:13px;">
+												<p>${data[i].major}</p>
+												<p>${data[i].endYear}</p>
+										</div>
+									</div>
+											`
+											$("#list-pendidikan").html(str)
+										}
+
+									}
+								})
+								//riwayat pekerjaan
+								$.ajax({
+									url: `/api/doctor/office/${doctorId}`,
+									type: 'get',
+									contentType: 'application/json',
+									success: function (data) {
+										var str = ``
+
+										for (var i = 0; i < data.length; i++) {
+											var startDate = new Date(data[i].startDate);
+											var endDate = new Date(data[i].endDate)
+											endDate = endDate.getFullYear()
+											if (endDate == 2023) {
+												endDate = 'sekarang'
+											}
+
+											str += `<div id="rs-detail">
+												<p id="rs" class="m-0 lh-sm">${data[i].medFacilityId.medicalFacility}</p>
+												<div id="" class="ps-2 d-flex justify-content-between" style="font-size:13px;">
+													<p>${data[i].specialization}</p>
+													
+													<p>${startDate.getFullYear()} - ${endDate}</p>
+												</div>
+											</div>`
+
+											$("#list-rs").html(str)
+										}
+
+									}
+
+
+								})
+
+							}
+
+						})
+						$("#editBtn").html(str) // memasukkan button edit gambar di html
+					}
+
+				})
+				//list tindakan 
+				$.ajax({
+					url: `/api/biodata/doctor/treatment/${id}`,
+					type: 'get',
+					contentType: 'application/json',
+					success: function (data) {
+						var str = ``
+
+						for (var i = 0; i < data.length; i++) {
+							str += `<li class="m-0 lh-sm">- ${data[i].treatmentName}</li>`
+						}
+
+						$("#listTindakan").html(str)
+					}
+
+
+				})
+
+				/*$.ajax({
+					url: `/api/doctor/office/${id}`,
+					type: 'get',
+					contentType: 'application/json',
+					success: function (data) {
+						var str = ``
+
+						for (var i = 0; i < data.length; i++) {
+							var startDate = new Date(data[i].startDate);
+							var endDate = new Date(data[i].endDate)
+							endDate = endDate.getFullYear()
+							if (endDate == 2023) {
+								endDate = 'sekarang'
+							}
+
+							str += `<div id="rs-detail">
+												<p id="rs" class="m-0 lh-sm">${data[i].medFacilityId.medicalFacility}</p>
+												<div id="" class="ps-2 d-flex justify-content-between" style="font-size:13px;">
+													<p>${data[i].specialization}</p>
+													
+													<p>${startDate.getFullYear()} - ${endDate}</p>
+												</div>
+											</div>`
+
+							$("#list-rs").html(str)
+						}
+
+					}
+
+
+				})*/
+
+				/*$.ajax({
+					url: `/api/doctor/education/${id}`,
+					type: 'get',
+					contentType: 'application/json',
+					success: function (data) {
+						var str = ``
+
+						for (var i = 0; i < data.length; i++) {
+
+							str += `<div id="univ-details">
+										<p id="univ" class="m-0 lh-sm">${data[i].institutionName}</p>
+										<div id="" class="ps-2 d-flex justify-content-between" style="font-size:13px;">
+												<p>${data[i].major}</p>
+												<p>${data[i].endYear}</p>
+										</div>
+									</div>
+											`
+							$("#list-pendidikan").html(str)
+						}
+
+					}
+				})*/
+
+			}
+			//modal untuk menambah specialization
+			function addSpecialization(bioId, doctorId) {
+				$.ajax({
+					url: `/api/doctor/specialization`,
+					type: 'get',
+					contentType: 'application/json',
+					success: function (data) {
+
+						var str = `
+			                <div class="mt-2 mb-3">
+			                    <label for="spesialisasiLabel" class="form-label">Spesialisasi*</label>
+			                    <select id="specId" class="form-select form-select-lg">
+			                        <option>--Pilih--</option>`;
+
+						for (var i = 0; i < data.length; i++) {
+							str += `<option value="${data[i].id}">${data[i].specialization}</option>`;
+
+						}
+
+
+						str += `</select>
+			                </div>
+			                <div class="d-flex flex-row justify-content-end gap-3">
+			                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+			                    <button id="btn-save" type="submit" class="btn btn-primary">Save changes</button>
+			                </div>`;
+
+						$(".modal-body").empty();
+						$(".modal-title").empty();
+
+						$(".modal-title").html("Pilih Spesialisasi Anda");
+						$(".modal-body").html(str);
+						$("#modal").modal("show");
+
+						$("#btn-save").off("click").on("click", function () {
+							checkSpesialisasi(bioId, doctorId);
+						});
+					}
+				});
+			}
+
+
+			function checkSpesialisasi(bioId, doctorId) {
+
+				// current doctor -> specialization id
+				//if current doctor specialization is 0, add it
+				// if == 1, check is it same, if it is, then dont change anything
+				// if not same, just edit the current specialization
+
+				$.ajax({
+					url: `/api/doctor/currentSpecialization/${doctorId}`,
+					type: 'get',
+					contentType: 'application/json',
+					success: function (data) {
+						var currentSpecId = data.id
+						var alert = ''
+
+						if (data != '') {
+							console.log($("#specId").val())
+							$.ajax({
+								url: `/api/user/${bioId}`,
+								type: 'get',
+								contentType: 'application/json',
+								success: function (res) {
+									var userId = res.id
+									var formData = `{
+											"specification_id" : ${$("#specId").val()}
+											}`
+
+									$.ajax({
+										url: `/api/${userId}/doctor/currentSpecialization/${currentSpecId}`,
+										type: 'put',
+										data: formData,
+										contentType: 'application/json',
+										success: function (res) {
+											var str = 'Spesialisasi berhasil diubah!'
+											getData()
+
+											$(".modal-title").html("Sukses")
+											$(".modal-body").html(str)
+
+											$("#modal").modal("show")
+										}
+									})
+
+
+								}
+							})
+
+
+
+						} else {
+							$.ajax({
+								url: `/api/user/${bioId}`,
+								type: 'get',
+								contentType: 'application/json',
+								success: function (res) {
+									var userId = res.id
+									var formData = `{
+											"specification_id" : ${$("#specId").val()}
+											}`
+
+									$.ajax({
+										url: `/api/${userId}/${doctorId}/currentSpecialization`,
+										type: 'post',
+										data: formData,
+										contentType: 'application/json',
+										success: function (res) {
+											console.log(res)
+											var str = 'Spesialisasi berhasil ditambahkan!'
+											getData()
+
+											$(".modal-title").html("Sukses")
+											$(".modal-body").html(str)
+
+											$("#modal").modal("show")
+										}
+									})
+
+
+								}
+							})
+
+						}
+
+					}
+				})
+
+
+
+			}
+
+			function openModal(id, userId) {
+
+				var str = `
+                      <form id="formImg" class="d-flex flex-column" enctype="multipart/form-data" action="/api/save" method="put">
+                        <input type="hidden" name="id" id="id" value="${id}" />
+                        <input type="hidden" name="userId" id="userId" value="${userId}" />
+                        <div class="mb-3 button-wrapper">
+	                        <label for="formFile" class="form-label">Photo</label>
+	                        <input
+                              type="file"
+                              id="formFile"
+                              class="form-control"
+                              name="file"
+                              accept="image/png, image/jpeg"
+                            />
+	                        <p class="text-muted mb-0">Allowed JPG, JPEG or PNG.</p>
+                      	</div>
+                      	<div class="d-flex flex-row justify-content-end gap-3">
+							  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        					<button id="btn-save" type="submit" class="btn btn-primary">Save changes</button>
+						</div>	  
+                      	
+                        
+                      </form>`
+				$(".modal-body").empty()
+				$(".modal-title").empty()
+
+				$(".modal-title").html("Edit Photo Profile")
+				$(".modal-body").html(str)
+				$("#btn-save").off("click").on("click", validation)
+				$("#modal").modal("show")
+
+			}
+
+			function validation() {
+
+				$("#formImg").validate({
+					errorClass: "text-danger",
+					rules: {
+						file: {
+							required: true,
+							typeFile: "jpg|JPG|jpeg|JPEG|png|PNG",
+							uploadFile : true
+						}
+					},
+					messages: {
+						file: {
+							required: "Please provide an image!",
+							typeFile: "Please upload jpg/jpeg/png !",
+							uploadFile: "Minimal file 1 MB!"
+						}
+					},
+					submitHandler: function (form) {
+						submitForm(form)
+					}
+				})
+			}
+
+			function submitForm(form) {
+				var id = $("#id").val()
+				var userId = $("#userId").val()
+
+				var formData = new FormData()
+				var data = $(form).serializeArray()
+
+				$.each(data, function (key, input) {
+					formData.append(input.name, input.value)
+				})
+
+				var file = $("#formFile").prop("files")
+				if (file.length > 0) {
+					formData.append("file", file[0])
+				}
+
+				$.ajax({
+					url: `/api/save`,
+					data: formData,
+					type: 'put',
+					dataType: 'json',
+					contentType: false,
+					processData: false,
+					success: function (res) {
+						console.log(res)
+						$("#modal").modal("toggle")
+						getData();
+					}
+				})
+
+			}
+
+			jQuery.validator.addMethod("typeFile", function (value, element, param) {
+				console.log(value.match(new RegExp("." + param + "$")))
+				return value.match(new RegExp("." + param + "$"));
+			})
+			
+			jQuery.validator.addMethod("uploadFile", function (val, element) {
+				var size = element.files[0].size;
+				if (size > 1048576)// checks the file more than 1 MB
+				{
+					return false;
+				} else {
+					return true;
+				}
+			})
+
+
+		</script>
+	</div>
+
+</body>
+
+</html>
